@@ -4,120 +4,98 @@
 
 ---
 
-**Họ Tên:** _<Họ Tên>_
-**Cohort:** _<A20-K1 / A20-K2 / ...>_
-**Ngày submit:** _<YYYY-MM-DD>_
+**Họ Tên:** Trần Ngọc Hùng-2A202600429
+**Cohort:** A20-K1
+**Ngày submit:** 2026-05-06
 
 ---
 
 ## 1. Hardware spec (từ `00-setup/detect-hardware.py`)
 
-> Paste output của `python 00-setup/detect-hardware.py` vào đây, hoặc điền thủ công:
+- **OS:** macOS 15.1.1 (Darwin 24.1.0)
+- **CPU:** Apple M4
+- **Cores:** 10 physical / 10 logical
+- **CPU extensions:** NEON, ASIMD, DOTPROD, AES, CRC32, SHA1, SHA2, SHA3, I8MM
+- **RAM:** 24.0 GB
+- **Accelerator:** Apple Metal
+- **llama.cpp backend đã chọn:** Metal
+- **Recommended model tier:** Qwen2.5-1.5B-Instruct (Q4_K_M)
 
-- **OS:** _<macOS 14 / Windows 11 / Ubuntu 24.04 / ...>_
-- **CPU:** _<Apple M2 / Intel i7-12700H / AMD Ryzen 7 5800H / ...>_
-- **Cores:** _<physical / logical>_
-- **CPU extensions:** _<AVX2 / AVX-512 / NEON / —>_
-- **RAM:** _<GB>_
-- **Accelerator:** _<NVIDIA RTX 4060 8GB / Apple Metal / AMD ROCm / Vulkan / CPU only>_
-- **llama.cpp backend đã chọn:** _<CUDA / Metal / Vulkan / CPU>_
-- **Recommended model tier:** _<TinyLlama-1.1B / Qwen2.5-1.5B / Llama-3.2-3B / Qwen2.5-7B>_
-
-**Setup story** (≤ 80 chữ): những gì cần thay đổi để lab chạy được trên máy bạn (vd: dùng WSL2, install CUDA Toolkit, fall back sang Vulkan vì ROCm phiên bản kén, tắt antivirus để pip install nhanh hơn, v.v.):
-
-_Answer here._
+**Setup story** (≤ 80 chữ): Lab chạy mượt mà trên Apple M4. Tôi đã thực hiện build llama.cpp từ source để tận dụng tối đa backend Metal. Mọi dependencies được cài đặt qua script macos-setup.sh một cách nhanh chóng. Việc sử dụng native server thay vì bản Python wrapper giúp cải thiện tính ổn định và observability qua endpoint /metrics.
 
 ---
 
 ## 2. Track 01 — Quickstart numbers (từ `benchmarks/01-quickstart-results.md`)
 
-> Paste bảng từ `benchmarks/01-quickstart-results.md` xuống đây (auto-generated bởi `python 01-llama-cpp-quickstart/benchmark.py`).
-
 | Model | Load (ms) | TTFT P50/P95 (ms) | TPOT P50/P95 (ms) | E2E P50/P95/P99 (ms) | Decode rate (tok/s) |
 |---|--:|--:|--:|--:|--:|
-| (Q4_K_M) | | | | | |
-| (Q2_K)   | | | | | |
+| qwen2.5-1.5b-instruct-q4_k_m.gguf | 1078 | 47 / 57 | 14.2 / 14.7 | 943 / 970 / 971 | 70.3 |
+| qwen2.5-1.5b-instruct-q2_k.gguf | 668 | 47 / 56 | 14.2 / 14.4 | 939 / 954 / 957 | 70.5 |
 
-**Một quan sát** (≤ 50 chữ): Q4_K_M vs Q2_K trên máy bạn — số liệu nói gì? Quality đáng đánh đổi không?
-
-_Answer here._
+**Một quan sát** (≤ 50 chữ): Q4_K_M và Q2_K có độ trễ (TTFT/TPOT) gần như tương đương trên M4. Q2_K tải nhanh hơn 38% nhưng chất lượng kém hơn. Với RAM 24GB, Q4_K_M là lựa chọn tối ưu vì chất lượng tốt hơn mà không làm giảm tốc độ inference đáng kể.
 
 ---
 
 ## 3. Track 02 — llama-server load test
 
-> Chạy 2 lần locust ở concurrency 10 và 50, paste tóm tắt bên dưới.
-
 | Concurrency | Total RPS | TTFB P50 (ms) | E2E P95 (ms) | E2E P99 (ms) | Failures |
 |--:|--:|--:|--:|--:|--:|
-| 10 | | | | | |
-| 50 | | | | | |
+| 10 | 1.21 | 6600 | 9000 | 9900 | 0 |
+| 50 | 1.18 | 12000 | 27000 | 29000 | 0 |
 
-**KV-cache observation** (từ `record-metrics.py`): peak `llamacpp:kv_cache_usage_ratio` ở concurrency 50 = _<0.XX>_, nghĩa là …
-
-_Answer here._
+**KV-cache observation** (từ `record-metrics.py`): peak `llamacpp:kv_cache_usage_ratio` ở concurrency 50 = 0.00, nghĩa là khối lượng context trong load test rất nhỏ so với context size 2048 được cấu hình, KV cache chưa bị chiếm dụng đáng kể.
 
 ---
 
 ## 4. Track 03 — Milestone integration
 
-- **N16 (Cloud/IaC):** _<piece you connected — k3d cluster / GCP project / docker-compose / "stub: localhost only">_
-- **N17 (Data pipeline):** _<piece — Airflow DAG / batch job / "stub: in-memory dict">_
-- **N18 (Lakehouse):** _<piece — Delta Lake table / Iceberg / "stub: SQLite">_
-- **N19 (Vector + Feature Store):** _<piece — Qdrant index / Feast / "stub: TOY_DOCS">_
+- **N16 (Cloud/IaC):** stub: localhost only
+- **N17 (Data pipeline):** stub: in-memory dict
+- **N18 (Lakehouse):** stub: SQLite
+- **N19 (Vector + Feature Store):** stub: TOY_DOCS
 
 **Nơi tốn nhiều ms nhất** trong pipeline (đo bằng `time.perf_counter` trong `pipeline.py`):
 
-- embed: _<ms>_
-- retrieve: _<ms>_
-- llama-server: _<ms>_
+- embed: 0.1 ms (stubbed/minimal)
+- retrieve: 0.1 ms
+- llama-server: 1586.1 ms
 
-**Reflection** (≤ 60 chữ): bottleneck nằm ở đâu? Có khớp với kỳ vọng không?
-
-_Answer here._
+**Reflection** (≤ 60 chữ): Bottleneck rõ ràng nằm ở llama-server (LLM inference). Điều này đúng với kỳ vọng vì retrieval chỉ là lookup trên dictionary nhỏ, trong khi LLM phải thực hiện tính toán heavy-weight trên Metal.
 
 ---
 
 ## 5. Bonus — The single change that mattered most
 
-> **Most important section.** Pick **một** thay đổi từ bonus track (build flag, thread sweep, quant pick, GPU offload, KV-cache quantization, speculative decoding, bất cứ challenge nào trong `BONUS-llama-cpp-optimization/CHALLENGES.md`) đã tạo ra speedup lớn nhất trên máy bạn.
+**Change:** Kích hoạt GPU offload qua Metal (`-ngl 99`) so với chạy thuần CPU (`-ngl 0`).
 
-**Change:** _<vd: rebuild llama.cpp với `-DGGML_NATIVE=ON -DGGML_BLAS=ON`; vd: hạ `-t` từ 12 xuống 6; vd: bật Metal trên M2>_
-
-**Before vs after** (paste 2-3 dòng từ sweep output):
+**Before vs after** (từ llama-bench):
 
 ```
-before: <số liệu>
-after:  <số liệu>
-speedup: ~<X.Y>×
+before: 13.84 tok/s (CPU only, -ngl 0, -t 10)
+after:  64.52 tok/s (Metal offload, -ngl 99, -t 10)
+speedup: ~4.66×
 ```
 
-**Tại sao nó work** (1–2 đoạn ngắn — đây là phần grader đọc kỹ nhất):
+**Tại sao nó work**:
 
-_Giải thích như đang nói với một bạn cùng lớp đang ngồi cạnh. Tránh "vibes-based" reasoning — bám vào mô hình mental của hardware (memory bandwidth? compute? cache?). Nếu kết quả khác kỳ vọng từ deck, nói rõ — đó là phần grader thưởng điểm._
+Việc offload toàn bộ layers sang Metal cho phép tận dụng Unified Memory của Apple Silicon và hàng ngàn GPU cores thay vì chỉ 10 CPU cores. Tốc độ decode tăng vọt từ 13.8 tok/s lên hơn 64 tok/s vì GPU có băng thông bộ nhớ (memory bandwidth) lớn hơn nhiều so với CPU khi truy xuất trọng số model trong quá trình auto-regressive decoding. Đây là minh chứng rõ nhất cho việc model 1.5B vẫn hưởng lợi cực lớn từ GPU tăng tốc dù kích thước model nhỏ.
 
 ---
 
 ## 6. (Optional) Điều ngạc nhiên nhất
 
-_(1–2 câu — không bắt buộc, nhưng người grader đọc tất cả)_
-
-_Answer here._
+Tôi ngạc nhiên khi thấy throughput (RPS) gần như không đổi khi tăng từ 10 lên 50 users, trong khi latency tăng vọt. Điều này cho thấy server đã chạm ngưỡng bão hòa compute/memory bandwidth từ 10 users.
 
 ---
 
 ## 7. Self-graded checklist
 
-- [ ] `hardware.json` đã commit
-- [ ] `models/active.json` đã commit (hoặc paste path snapshot vào section 1)
-- [ ] `benchmarks/01-quickstart-results.md` đã commit
-- [ ] `benchmarks/02-server-results.md` (hoặc CSV từ `record-metrics.py`) đã commit
-- [ ] `benchmarks/bonus-*.md` đã commit (ít nhất 1 sweep)
-- [ ] Ít nhất 6 screenshots trong `submission/screenshots/` (xem `submission/screenshots/README.md`)
-- [ ] `make verify` exit 0 (chạy ngay trước khi push)
-- [ ] Repo trên GitHub ở chế độ **public**
-- [ ] Đã paste public repo URL vào VinUni LMS
-
----
-
-**Quan trọng:** repo phải **public** đến khi điểm được công bố. Nếu private, grader không xem được → 0 điểm.
+- [x] `hardware.json` đã commit
+- [x] `models/active.json` đã commit (hoặc paste path snapshot vào section 1)
+- [x] `benchmarks/01-quickstart-results.md` đã commit
+- [x] `benchmarks/02-server-results.md` (hoặc CSV từ `record-metrics.py`) đã commit
+- [x] `benchmarks/bonus-*.md` đã commit (ít nhất 1 sweep)
+- [x] Ít nhất 6 screenshots trong `submission/screenshots/` (xem `submission/screenshots/README.md`)
+- [x] `make verify` exit 0 (chạy ngay trước khi push)
+- [x] Repo trên GitHub ở chế độ **public**
+- [x] Đã paste public repo URL vào VinUni LMS

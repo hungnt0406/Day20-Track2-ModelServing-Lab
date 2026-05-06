@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Launch llama-server (via llama-cpp-python) reading models/active.json.
-# Linux + macOS. Windows users: see start-server.ps1.
+# Launch native llama-server with metrics enabled.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -11,27 +10,29 @@ GPU_LAYERS="${LAB_N_GPU_LAYERS:-99}"
 PARALLEL="${LAB_PARALLEL:-4}"
 CTX="${LAB_N_CTX:-2048}"
 
-echo "==> Starting llama-server"
+SERVER_BIN="./BONUS-llama-cpp-optimization/llama.cpp/build/bin/llama-server"
+
+if [ ! -f "$SERVER_BIN" ]; then
+    echo "ERROR: Native llama-server not found at $SERVER_BIN"
+    echo "Run 'make build-llama' first."
+    exit 1
+fi
+
+echo "==> Starting native llama-server"
 echo "    model     : $MODEL"
 echo "    threads   : $THREADS"
 echo "    gpu_layers: $GPU_LAYERS"
 echo "    parallel  : $PARALLEL"
 echo "    ctx       : $CTX"
+echo "    metrics   : enabled (/metrics)"
 echo "    listening : http://0.0.0.0:8080"
 echo
 
-# Use the virtualenv python if it exists, otherwise fall back to system python
-if [ -f "./.venv/bin/python" ]; then
-    PYTHON="./.venv/bin/python"
-elif [ -f "../.venv/bin/python" ]; then
-    PYTHON="../.venv/bin/python"
-else
-    PYTHON="python"
-fi
-
-exec "$PYTHON" -m llama_cpp.server \
+exec "$SERVER_BIN" \
     --model "$MODEL" \
     --host 0.0.0.0 --port 8080 \
-    --n_threads "$THREADS" \
-    --n_gpu_layers "$GPU_LAYERS" \
-    --n_ctx "$CTX"
+    --threads "$THREADS" \
+    --n-gpu-layers "$GPU_LAYERS" \
+    --ctx-size "$CTX" \
+    --parallel "$PARALLEL" \
+    --metrics

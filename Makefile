@@ -44,8 +44,8 @@ bench: ## Track 01 — TTFT/TPOT/P95 baseline + Q4_K_M vs Q2_K
 # Track 02 — llama-server
 # ─────────────────────────────────────────────────────────────
 
-serve: ## Track 02 — start llama-server on :8080 (foreground)
-	@bash 02-llama-cpp-server/start-server.sh
+serve: ## Track 02 — start native llama-server on :8080 (foreground) with metrics
+	@bash 02-llama-cpp-server/start-native-server.sh
 
 smoke: ## Track 02 — smoke-test the running server
 	@$(PY) 02-llama-cpp-server/smoke-test.py

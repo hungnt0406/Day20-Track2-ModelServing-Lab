@@ -70,7 +70,7 @@ make clean          Wipe generated artifacts (keep models, REFLECTION, screensho
 | **BONUS-llama-cpp-optimization** | Optional, deeper. Weaker laptops benefit *more* | 60–120 min |
 | **BONUS-mlx-macos** | Optional, Apple Silicon only | 30 min |
 
-Total core path: ~2.5 giờ. Bonus tracks thêm 1–3 giờ.
+Total core path: ~2.5 giờ. Bonus2 tracks thêm 1–3 giờ.
 
 ---
 
